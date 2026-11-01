@@ -1,42 +1,83 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditorInternal.Profiling.Memory.Experimental;
 using UnityEngine;
 
-public class ItemSystem : MonoBehaviour
+public class ItemSystem : Singleton<ItemSystem>
 {
-    [SerializeField] public ItemData itemData;
-    [SerializeField] public ColorData colorData;
+    public ItemData itemData;
+    public ColorData colorData;
 
     [Header("Item Spawn Settings")]
     public int spawnCount = 3;
-
-    public List<Transform> spawnPoints;
+    public List<Transform> spawnPoints = new List<Transform>();
 
     [Header("Item Prefab")]
     public Item itemPrefab;
     public Transform itemParent;
-    public List<Item> spawnedItems = new List<Item>();
 
+    private readonly List<Item> spawnedItems = new List<Item>();
+    private readonly Stack<Item> pool = new Stack<Item>();
 
-    private void Start()
-    {
-        SpawnItems();
-    }
     public void SpawnItems()
     {
-        for (int i = 0; i < spawnCount; i++)
+        int n = Mathf.Min(spawnCount, spawnPoints.Count);
+        for (int i = 0; i < n; i++)
+            SpawnItem(spawnPoints[i].position, colorData.GetRandom());
+    }
+
+    private void SpawnItem(Vector2 center, ColorDetail color)
+    {
+        Item item = pool.Count > 0 ? pool.Pop() : Instantiate(itemPrefab, itemParent);
+        item.gameObject.SetActive(true);
+        item.SetupBlock(itemData.GetRandom(), color, itemData.ItemSize, center);
+        spawnedItems.Add(item);
+    }
+    public void SpawnItemByColor(ColorDetail color)
+    {
+        OnClearAll();
+        SpawnItem(spawnPoints[0].position, color);
+        int n = Mathf.Min(spawnCount, spawnPoints.Count);
+        for (int i = 1; i < n; i++)
+            SpawnItem(spawnPoints[i].position, colorData.GetRandom());
+    }
+
+    public void OnItemPlaced(Item item)
+    {
+        item.gameObject.SetActive(false);
+        pool.Push(item);
+        spawnedItems.Remove(item);
+        if (spawnedItems.Count == 0) SpawnItems();
+    }
+
+    public void OnRestartItem()
+    {
+        if(spawnedItems.Count == 0)
         {
-            GetRandomDataItem(spawnPoints[i].position);
+            pool.Clear();
+            SpawnItems();
+        }
+        else
+        {
+            foreach (Item item in spawnedItems)
+            {
+                item.gameObject.SetActive(false);
+            }
+            spawnedItems.Clear();
+            pool.Clear();
+
+            SpawnItems();
         }
     }
-    public void GetRandomDataItem(Vector2 pos)
+
+
+    public void OnClearAll()
     {
-        ItemDetail itemDetail = itemData.GetRandom();
-        ColorDetail colorDetail = colorData.GetRandom();
-
-        Item newItem = PoolingManager.Spawn(itemPrefab, pos, Quaternion.identity, itemParent);
-        newItem.SetupBlock(itemDetail, colorDetail, itemData.ItemSize , pos);
-        newItem.gameObject.SetActive(true);
+        pool.Clear();
+        foreach(Item item in spawnedItems)
+        {
+            item.gameObject.SetActive(false);
+        }
+        spawnedItems.Clear();
     }
-
 }

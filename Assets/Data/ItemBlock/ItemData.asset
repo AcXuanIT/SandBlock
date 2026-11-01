@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b0bc5faa83fc1d4dad00f0c3d1ded83, type: 3}
   m_Name: ItemData
   m_EditorClassIdentifier: 
-  ItemSize: 30
+  ItemSize: 15
   itemDetails:
   - shape:
     - {x: 0, y: 0}
@@ -28,8 +28,8 @@ MonoBehaviour:
   - shape:
     - {x: 0, y: 0}
     - {x: 1, y: 0}
-    - {x: -1, y: 0}
+    - {x: 2, y: 0}
   - shape:
-    - {x: 0, y: -1}
     - {x: 0, y: 0}
     - {x: 0, y: 1}
+    - {x: 0, y: 2}
